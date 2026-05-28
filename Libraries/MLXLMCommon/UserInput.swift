@@ -1,7 +1,9 @@
 // Copyright © 2024 Apple Inc.
 
+#if canImport(AVFoundation)
 @preconcurrency import AVFoundation
 import CoreImage
+#endif
 import Foundation
 import MLX
 import Tokenizers
@@ -40,6 +42,7 @@ public struct UserInput {
         }
     }
 
+#if canImport(AVFoundation)
     public struct VideoFrame {
         public let frame: CIImage
         public let timeStamp: CMTime
@@ -137,6 +140,13 @@ public struct UserInput {
             }
         }
     }
+#else
+    // Linux: image/video processing requires AVFoundation/CoreImage (Apple only).
+    // Types are defined as empty enums so Chat.Message and other APIs still compile.
+    public struct VideoFrame: Sendable {}
+    public enum Video: Sendable { case url(URL) }
+    public enum Image: Sendable { case url(URL); case array(MLXArray) }
+#endif
 
     /// Representation of processing to apply to media.
     public struct Processing: Sendable {
@@ -346,11 +356,11 @@ internal enum UserInputError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notImplemented:
-            return String(localized: "This functionality is not implemented.")
+            return "This functionality is not implemented."
         case .unableToLoad(let url):
-            return String(localized: "Unable to load image from URL: \(url.path).")
+            return "Unable to load image from URL: \(url.path)."
         case .arrayError(let message):
-            return String(localized: "Error processing image array: \(message).")
+            return "Error processing image array: \(message)."
         }
     }
 }
